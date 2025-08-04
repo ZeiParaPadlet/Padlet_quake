@@ -19,7 +19,6 @@ def on_message(ws, message):
         print("Hello, server!")
     elif message == "ping":
         print("pong")
-    # ... その他の処理 ...
 
 def on_error(ws, error):
     """
@@ -42,7 +41,7 @@ def on_open(ws):
     ws.send("hello")
 
 if __name__ == "__main__":
-    uri = "ws://echo.websocket.events/" # テスト用の公開サーバー
+    uri = "wss://api.p2pquake.net/vs/ws" # テスト用の公開サーバー
     websocket.enableTrace(True) # デバッグログを有効にする
     
     # WebSocketAppクラスのインスタンスを作成
