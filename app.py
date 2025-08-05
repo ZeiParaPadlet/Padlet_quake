@@ -1,4 +1,6 @@
 import websocket
+import json
+import re
 from fastapi import FastAPI
 from datetime import datetime
 import folium
@@ -7,70 +9,130 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from PIL import Image
 import os
+import asyncio
+import threading
 
 app = FastAPI()
 
-new_data = ""
-new_image_data = ""
+# データを格納するためのスレッドセーフなコンテナ
+# 実際のアプリケーションでは、データベースなどを使うべきです
+earthquake_data = {}
+earthquake_image_path = ""
 
 scale_num = [10, 20, 30, 40, 45, 50, 55, 60, 70]
 scale_name = ["震度1", "震度2", "震度3", "震度4", "震度5弱", "震度5強", "震度6弱", "震度6強", "震度7"]
 
 def scale_num2name(input):
-    return scale_name[scale_num.index(input)]
+    try:
+        return scale_name[scale_num.index(input)]
+    except ValueError:
+        return "不明"
 
 @app.get("/")
 async def read_root():
-    return {"Hello": "World"}
+    return {"message": "WebSocketクライアントが実行されています。/get_quake_551で最新の地震情報を取得できます。"}
 
 @app.get("/get_quake_551")
 async def get_quake_551():
-    return new_data
+    global earthquake_data
+    return earthquake_data
 
-@app.get("/get_image")
-async def get_image():
-    return new_image_data
+@app.get("/get_quake_image")
+async def get_quake_image():
+    global earthquake_image_path
+    if not earthquake_image_path or not os.path.exists(earthquake_image_path):
+        return {"error": "画像がまだ生成されていません。"}
+    return {"image_path": earthquake_image_path}
 
 def on_message(ws, message):
-    if not message.id in checked_id:
-        if message.code == 551:
-            source = message.issue.source
-            maxScale = scale_num2name(message.earthquake.maxScale)
-            depth = message.earthquake.hypocenter.depth
-            latitude = message.earthquake.hypocenter.latitude
-            longitude = message.earthquake.hypocenter.longitude
-            magnitude = message.earthquake.hypocenter.magnitude
-            earthquake_name = message.earthquake.hypocenter.name
-            tsunami = message.earthquake.domesticTsunami
-            time = re.split('/ :', message.earthquake.time)
-            dt_object = datetime.strptime(time, "%Y/%m/%d %H:%M:%S")
-            time_str = dt_object.strftime("%Y年%m月%d日%H時%M分%S秒")
-            points = message.points
-            point_str = ""
-            for point in points:
-                point_str = point_str + point.pref + point.addr + ":" + scale_num2name(point.scale) + "\n"
+    global earthquake_data, earthquake_image_path
+    try:
+        data = json.loads(message)
+    except json.JSONDecodeError:
+        print("Received invalid JSON")
+        return
 
-            icon_image_path = 'icon.png'
-            m = folium.Map(location=[latitude, longitude], zoom_start=15)
-            icon = CustomIcon(icon_image=icon_image_path, icon_size=(50, 50))
-            folium.Marker(location=[latitude, longitude], tooltip="震源", icon=icon).add_to(m)
-            html_file_path = "map_with_custom_icon.html"
-            m.save(html_file_path)
+    # ここではidによる重複チェックは省略
 
-            options = Options()
-            options.add_argument("--headless")
-            options.add_argument("--disable-gpu")
-            options.add_argument("--no-sandbox")
+    if data.get("code") == 551:
+        issue = data.get("issue", {})
+        earthquake = data.get("earthquake", {})
+        hypocenter = earthquake.get("hypocenter", {})
+        points = data.get("points", [])
 
-            driver = webdriver.Chrome(options=options)
+        source = issue.get("source")
+        maxScale = scale_num2name(earthquake.get("maxScale"))
+        depth = hypocenter.get("depth")
+        latitude = hypocenter.get("latitude")
+        longitude = hypocenter.get("longitude")
+        magnitude = hypocenter.get("magnitude")
+        earthquake_name = hypocenter.get("name")
+        tsunami = earthquake.get("domesticTsunami")
+        time_str_raw = earthquake.get("time")
 
-            driver.get(f"file://{os.path.abspath(html_file_path)}")
-            driver.set_window_size(1000, 800)
-            screenshot_path = "map_with_custom_icon.png"
-            driver.save_screenshot(screenshot_path)
-            driver.quit()
+        if time_str_raw:
+            try:
+                dt_object = datetime.strptime(time_str_raw, "%Y/%m/%d %H:%M:%S")
+                time_str = dt_object.strftime("%Y年%m月%d日%H時%M分%S秒")
+            except ValueError:
+                time_str = "日時解析エラー"
+        else:
+            time_str = "日時不明"
 
-            new_data = "情報:" + source + "\n" + "最大震度:" + maxScale + "\n" + "震源の深さ:" + depth + "\n" + "マグニチュード:" + magnitude + "\n" + "震源:" + earthquake_name + "\n" + "時刻:" + time_str + "\n" + "\n" + point_str
+        point_str = ""
+        for point in points:
+            point_str += f"{point.get('pref')}{point.get('addr')}: {scale_num2name(point.get('scale'))}\n"
+        
+        # データをグローバル変数に格納
+        earthquake_data = {
+            "source": source,
+            "maxScale": maxScale,
+            "depth": depth,
+            "latitude": latitude,
+            "longitude": longitude,
+            "magnitude": magnitude,
+            "earthquake_name": earthquake_name,
+            "tsunami": tsunami,
+            "time": time_str,
+            "points": point_str.strip()
+        }
+        
+        # 地図画像の生成
+        if latitude and longitude:
+            try:
+                icon_image_path = 'icon.png'
+                m = folium.Map(location=[latitude, longitude], zoom_start=10)
+                icon = CustomIcon(icon_image=icon_image_path, icon_size=(50, 50))
+                folium.Marker(location=[latitude, longitude], tooltip="震源", icon=icon).add_to(m)
+                
+                for point in points:
+                    if 'latitude' in point and 'longitude' in point:
+                         folium.Marker(
+                             location=[point.get('latitude'), point.get('longitude')],
+                             tooltip=f"{point.get('pref')} {point.get('addr')}: {scale_num2name(point.get('scale'))}",
+                             icon=folium.Icon(color='red', icon='info-sign')
+                         ).add_to(m)
+
+                html_file_path = "map.html"
+                m.save(html_file_path)
+
+                options = Options()
+                options.add_argument("--headless")
+                options.add_argument("--disable-gpu")
+                options.add_argument("--no-sandbox")
+                options.add_argument("--window-size=800,600")
+
+                driver = webdriver.Chrome(options=options)
+                driver.get(f"file://{os.path.abspath(html_file_path)}")
+                screenshot_path = "map_with_custom_icon.png"
+                driver.save_screenshot(screenshot_path)
+                driver.quit()
+
+                earthquake_image_path = screenshot_path
+                print("地震画像が更新されました。")
+
+            except Exception as e:
+                print(f"地図画像の生成中にエラーが発生しました: {e}")
 
 def on_error(ws, error):
     print(f"エラー: {error}")
@@ -81,16 +143,16 @@ def on_close(ws, close_status_code, close_msg):
 def on_open(ws):
     print("接続が確立されました")
 
-if __name__ == "__main__":
-    uri = "wss://api.p2pquake.net/vs/ws" # テスト用の公開サーバー
-    websocket.enableTrace(True) # デバッグログを有効にする
-    
-    # WebSocketAppクラスのインスタンスを作成
+def run_websocket():
+    uri = "wss://api.p2pquake.net/v2/ws"
     ws = websocket.WebSocketApp(uri,
-                              on_open=on_open,
-                              on_message=on_message,
-                              on_error=on_error,
-                              on_close=on_close)
-    
-    # メインループを実行
+                                on_open=on_open,
+                                on_message=on_message,
+                                on_error=on_error,
+                                on_close=on_close)
     ws.run_forever()
+
+# FastAPIの起動前にWebSocketクライアントを別スレッドで実行
+websocket_thread = threading.Thread(target=run_websocket)
+websocket_thread.daemon = True
+websocket_thread.start()
