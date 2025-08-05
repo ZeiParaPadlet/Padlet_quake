@@ -1,5 +1,12 @@
 import websocket
 from fastapi import FastAPI
+from datetime import datetime
+import folium
+from folium.features import CustomIcon
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from PIL import Image
+import os
 
 app = FastAPI()
 
@@ -10,7 +17,7 @@ async def read_root():
 def on_message(ws, message):
     if not message.id in checked_id:
         if message.code == 551:
-            source = message.issue.source
+            source = message.issue.source
             maxScale = scale_num2name(message.earthquake.maxScale)
             depth = message.earthquake.hypocenter.depth
             latitude = message.earthquake.hypocenter.latitude
@@ -19,6 +26,9 @@ def on_message(ws, message):
             earthquake_name = message.earthquake.hypocenter.name
             tsunami = message.earthquake.domesticTsunami
             time = re.split('/ :', message.earthquake.time)
+            dt_object = datetime.strptime(time, "%Y/%m/%d %H:%M:%S")
+            time_str = dt_object.strftime("%Y年%m月%d日%H時%M分%S秒")
+            
 
 def on_error(ws, error):
     """
