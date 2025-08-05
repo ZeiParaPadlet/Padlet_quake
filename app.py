@@ -27,6 +27,10 @@ async def read_root():
 async def get_quake_551():
     return new_data
 
+@app.get("/get_image")
+async def get_image():
+    return new_image_data
+
 def on_message(ws, message):
     if not message.id in checked_id:
         if message.code == 551:
