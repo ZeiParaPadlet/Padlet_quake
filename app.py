@@ -8,17 +8,17 @@ async def read_root():
     return {"Hello": "World"}
 
 def on_message(ws, message):
-    """
-    WebSocketからメッセージを受信したときに実行される関数。
-    """
-    print(f"受信したメッセージ: {message}")
-    
-    # ここにメッセージを受信したときに実行したいプログラムを書く
-    # 例: 受信したメッセージに応じて異なる処理を実行する
-    if message == "hello":
-        print("Hello, server!")
-    elif message == "ping":
-        print("pong")
+    if not message.id in checked_id:
+        if message.code == 551:
+            source = message.issue.source
+            maxScale = scale_num2name(message.earthquake.maxScale)
+            depth = message.earthquake.hypocenter.depth
+            latitude = message.earthquake.hypocenter.latitude
+            longitude = message.earthquake.hypocenter.longitude
+            magnitude = message.earthquake.hypocenter.magnitude
+            earthquake_name = message.earthquake.hypocenter.name
+            tsunami = message.earthquake.domesticTsunami
+            time = re.split('/ :', message.earthquake.time)
 
 def on_error(ws, error):
     """
