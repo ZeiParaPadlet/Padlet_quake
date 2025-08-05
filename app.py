@@ -1,6 +1,5 @@
 import websocket
 import json
-import re
 from fastapi import FastAPI
 from datetime import datetime
 import folium
