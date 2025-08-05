@@ -1,2 +1,6 @@
-websocket
-fastAPI
+fastapi
+python-websocket-client
+uvicorn
+folium
+selenium
+Pillow
