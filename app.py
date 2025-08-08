@@ -56,7 +56,6 @@ async def get_quake_image():
     return {"image_path": earthquake_image_path[-1]}
 
 def on_message(ws, message):
-    session = sa.login(username, password)
     cloud = session.connect_cloud(project_id)
     
     global quake_list, quake_image_list
@@ -163,6 +162,7 @@ def on_close(ws, close_status_code, close_msg):
     print("接続が閉じられました")
 
 def on_open(ws):
+    session = sa.login(username, password)
     print("接続が確立されました")
 
 def run_websocket():
