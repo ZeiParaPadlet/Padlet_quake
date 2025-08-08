@@ -14,6 +14,9 @@ from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
+images_id = 0
+quake_list = []
+quake_image_list = []
 # データを格納するためのスレッドセーフなコンテナ
 # 実際のアプリケーションでは、データベースなどを使うべきです
 earthquake_data = {}
@@ -35,15 +38,15 @@ async def read_root():
 
 @app.get("/get_quake_551")
 async def get_quake_551():
-    global earthquake_data
-    return earthquake_data
+    global quake_list
+    return quake_list[-1]
 
 @app.get("/get_quake_image")
 async def get_quake_image():
-    global earthquake_image_path
-    if not earthquake_image_path or not os.path.exists(earthquake_image_path):
+    global quake_image_list
+    if not quake_image_list or not os.path.exists(quake_image_list[-1]):
         return {"error": "画像がまだ生成されていません。"}
-    return {"image_path": earthquake_image_path}
+    return {"image_path": earthquake_image_path[-1]}
 
 def on_message(ws, message):
     global earthquake_data, earthquake_image_path
@@ -85,7 +88,7 @@ def on_message(ws, message):
             point_str += f"{point.get('pref')}{point.get('addr')}: {scale_num2name(point.get('scale'))}\n"
         
         # データをグローバル変数に格納
-        earthquake_data = {
+        quake_list.append({
             "source": source,
             "maxScale": maxScale,
             "depth": depth,
@@ -96,7 +99,7 @@ def on_message(ws, message):
             "tsunami": tsunami,
             "time": time_str,
             "points": point_str.strip()
-        }
+        })
         
         # 地図画像の生成
         if latitude and longitude:
@@ -125,11 +128,12 @@ def on_message(ws, message):
 
                 driver = webdriver.Chrome(options=options)
                 driver.get(f"file://{os.path.abspath(html_file_path)}")
-                screenshot_path = "map_with_custom_icon.png"
+                screenshot_path = f"map_with_custom_icon{images_id}.png"
                 driver.save_screenshot(screenshot_path)
                 driver.quit()
 
-                earthquake_image_path = screenshot_path
+                
+                quake_image_list.append(screenshot_path)
                 print("地震画像が更新されました。")
 
             except Exception as e:
