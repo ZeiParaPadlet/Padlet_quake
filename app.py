@@ -13,6 +13,10 @@ import threading
 from fastapi.responses import JSONResponse
 import scratchattach as sa
 
+username = os.getenv("USERNAME")
+password = os.getenv("PASSWORD")
+project_id = os.getenv("PROJECT_ID")
+
 app = FastAPI()
 
 images_id = 0
@@ -51,6 +55,9 @@ async def get_quake_image():
     return {"image_path": earthquake_image_path[-1]}
 
 def on_message(ws, message):
+    session = sa.login(username, password)
+    cloud = session.connect_cloud(project_id)
+    
     global quake_list, quake_image_list
     try:
         data = json.loads(message)
