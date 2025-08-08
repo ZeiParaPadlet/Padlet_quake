@@ -15,10 +15,10 @@ import scratchattach as sa
 import requests
 
 username = os.getenv("USERNAME")
-password = os.getenv("PASSWORD")
+session_id = os.getenv("PASSWORD")
 project_id = os.getenv("PROJECT_ID")
 print(username)
-print(password)
+print(session_id)
 print(project_id)
 
 app = FastAPI()
@@ -59,7 +59,7 @@ async def get_quake_image():
     return {"image_path": earthquake_image_path[-1]}
 
 def on_message(ws, message):
-    cloud = session.connect_cloud(project_id)
+    cloud.reconnect()
     
     global quake_list, quake_image_list
     try:
@@ -158,6 +158,8 @@ def on_message(ws, message):
             except Exception as e:
                 print(f"地図画像の生成中にエラーが発生しました: {e}")
 
+            cloud.disconnect()
+
 def on_error(ws, error):
     print(f"エラー: {error}")
 
@@ -165,7 +167,9 @@ def on_close(ws, close_status_code, close_msg):
     print("接続が閉じられました")
 
 def on_open(ws):
-    session = sa.login(username, password)
+    session = sa.login(session_id, username=username)
+    cloud = session.connect_cloud(project_id)
+    cloud.disconnect()
     print("接続が確立されました")
 
 def run_websocket():
