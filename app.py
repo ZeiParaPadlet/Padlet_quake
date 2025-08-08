@@ -30,7 +30,8 @@ def scale_num2name(input):
 
 @app.get("/")
 async def read_root():
-    return {"message": "WebSocketクライアントが実行されています。/get_quake_551で最新の地震情報を取得できます。"}
+    content = {"message": "WebSocketクライアントが実行されています。/get_quake_551で最新の地震情報を取得できます。"}
+    return JSONResponse(content=content, media_type="application/json; charset=utf-8")
 
 @app.get("/get_quake_551")
 async def get_quake_551():
