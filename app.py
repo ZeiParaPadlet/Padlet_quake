@@ -15,7 +15,7 @@ import scratchattach as sa
 import requests
 
 username = os.getenv("USERNAME")
-session_id = os.getenv("PASSWORD")
+session_id = os.getenv("SESSION_ID")
 project_id = os.getenv("PROJECT_ID")
 print(username)
 print(session_id)
