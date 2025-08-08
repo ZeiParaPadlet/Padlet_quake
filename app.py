@@ -11,6 +11,7 @@ import os
 import asyncio
 import threading
 from fastapi.responses import JSONResponse
+import scratchattach as sa
 
 app = FastAPI()
 
@@ -21,6 +22,7 @@ quake_image_list = []
 # 実際のアプリケーションでは、データベースなどを使うべきです
 earthquake_data = {}
 earthquake_image_path = ""
+id_list = []
 
 scale_num = [10, 20, 30, 40, 45, 50, 55, 60, 70]
 scale_name = ["震度1", "震度2", "震度3", "震度4", "震度5弱", "震度5強", "震度6弱", "震度6強", "震度7"]
@@ -49,14 +51,17 @@ async def get_quake_image():
     return {"image_path": earthquake_image_path[-1]}
 
 def on_message(ws, message):
-    global earthquake_data, earthquake_image_path
+    global quake_list, quake_image_list
     try:
         data = json.loads(message)
     except json.JSONDecodeError:
         print("Received invalid JSON")
         return
 
-    # ここではidによる重複チェックは省略
+    if message.id in id_list:
+        return
+    else:
+        id_list.append(message.id)
 
     if data.get("code") == 551:
         issue = data.get("issue", {})
