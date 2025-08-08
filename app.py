@@ -167,7 +167,7 @@ def on_close(ws, close_status_code, close_msg):
     print("接続が閉じられました")
 
 def on_open(ws):
-    session = sa.login(session_id, username=username)
+    session = sa.login_by_id(session_id, username=username)
     cloud = session.connect_cloud(project_id)
     cloud.disconnect()
     print("接続が確立されました")
