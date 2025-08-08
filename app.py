@@ -12,6 +12,7 @@ import asyncio
 import threading
 from fastapi.responses import JSONResponse
 import scratchattach as sa
+import requests
 
 username = os.getenv("USERNAME")
 password = os.getenv("PASSWORD")
@@ -112,6 +113,10 @@ def on_message(ws, message):
             "time": time_str,
             "points": point_str.strip()
         })
+
+        responce = requests.get(f"https://api.zeipara.f5.si/kanji?context{earthquake_name}")
+        data = responce.text
+        cloud.set_var("1", f"{data}00000{depth}00000{magnitude * 10}00000{maxScale * 10}")
         
         # 地図画像の生成
         if latitude and longitude:
