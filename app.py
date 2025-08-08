@@ -10,6 +10,7 @@ from PIL import Image
 import os
 import asyncio
 import threading
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
