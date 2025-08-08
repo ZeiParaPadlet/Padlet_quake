@@ -17,6 +17,9 @@ import requests
 username = os.getenv("USERNAME")
 password = os.getenv("PASSWORD")
 project_id = os.getenv("PROJECT_ID")
+print(username)
+print(password)
+print(project_id)
 
 app = FastAPI()
 
