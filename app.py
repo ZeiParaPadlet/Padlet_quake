@@ -49,6 +49,8 @@ async def read_root():
 @app.get("/get_quake_551")
 async def get_quake_551():
     global quake_list
+    if not quake_list:
+        return {"error": "情報がまだ生成されていません。"}
     return quake_list[-1]
 
 @app.get("/get_quake_image")
