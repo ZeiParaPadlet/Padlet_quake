@@ -23,8 +23,8 @@ print(project_id)
 
 app = FastAPI()
 
-session = None
-cloud = None
+global session
+global cloud
 
 images_id = 0
 quake_list = []
