@@ -23,9 +23,6 @@ print(project_id)
 
 app = FastAPI()
 
-global session
-global cloud
-
 images_id = 0
 quake_list = []
 quake_image_list = []
@@ -37,6 +34,10 @@ id_list = []
 
 scale_num = [10, 20, 30, 40, 45, 50, 55, 60, 70]
 scale_name = ["震度1", "震度2", "震度3", "震度4", "震度5弱", "震度5強", "震度6弱", "震度6強", "震度7"]
+
+# Scratch接続用のグローバル変数を初期化
+session = None
+cloud = None
 
 def scale_num2name(input):
     try:
@@ -63,20 +64,37 @@ async def get_quake_image():
         return {"error": "画像がまだ生成されていません。"}
     return {"image_path": earthquake_image_path[-1]}
 
+def init_scratch_connection():
+    """Scratchクラウド接続を初期化するヘルパー関数"""
+    global session, cloud
+    try:
+        if not session or not cloud:
+            print("Scratchへの接続を試みます...")
+            session = sa.login_by_id(session_id, username=username)
+            cloud = session.connect_cloud(project_id)
+            print("Scratchクラウド接続を確立しました。")
+    except Exception as e:
+        print(f"Scratchへの接続中にエラーが発生しました: {e}")
+        session = None
+        cloud = None
+
 def on_message(ws, message):
-    cloud.reconnect()
+    global quake_list, quake_image_list, id_list
+    init_scratch_connection()
     
-    global quake_list, quake_image_list
     try:
         data = json.loads(message)
     except json.JSONDecodeError:
         print("Received invalid JSON")
         return
 
-    if message.id in id_list:
+    # IDの重複チェック
+    message_id = data.get("id")
+    if message_id in id_list:
+        print(f"ID {message_id} は既に処理済みです。")
         return
     else:
-        id_list.append(message.id)
+        id_list.append(message_id)
 
     if data.get("code") == 551:
         issue = data.get("issue", {})
@@ -85,7 +103,8 @@ def on_message(ws, message):
         points = data.get("points", [])
 
         source = issue.get("source")
-        maxScale = scale_num2name(earthquake.get("maxScale"))
+        maxScale_num = earthquake.get("maxScale")
+        maxScale = scale_num2name(maxScale_num)
         depth = hypocenter.get("depth")
         latitude = hypocenter.get("latitude")
         longitude = hypocenter.get("longitude")
@@ -121,10 +140,22 @@ def on_message(ws, message):
             "points": point_str.strip()
         })
 
-        responce = requests.get(f"https://api.zeipara.f5.si/kanji?context{earthquake_name}")
-        data = responce.text
-        cloud.set_var("1", f"{data}00000{depth}00000{magnitude * 10}00000{maxScale * 10}")
-        
+        # Scratchクラウド変数への送信処理
+        if cloud:
+            try:
+                responce = requests.get(f"https://api.zeipara.f5.si/kanji?context={earthquake_name}")
+                kanji_data = responce.text
+                
+                # スケールが不明の場合は0に設定
+                max_scale_value = maxScale_num if maxScale_num else 0
+                
+                cloud.set_var("1", f"{kanji_data}00000{depth}00000{magnitude * 10}00000{max_scale_value * 10}")
+            except Exception as e:
+                print(f"Scratchクラウド変数更新中にエラーが発生しました: {e}")
+                cloud = None
+        else:
+            print("Scratchクラウドに接続されていません。変数を送信できません。")
+            
         # 地図画像の生成
         if latitude and longitude:
             try:
@@ -156,26 +187,30 @@ def on_message(ws, message):
                 driver.save_screenshot(screenshot_path)
                 driver.quit()
 
-                
                 quake_image_list.append(screenshot_path)
                 print("地震画像が更新されました。")
 
             except Exception as e:
                 print(f"地図画像の生成中にエラーが発生しました: {e}")
 
-            cloud.disconnect()
-
 def on_error(ws, error):
     print(f"エラー: {error}")
 
 def on_close(ws, close_status_code, close_msg):
+    global session, cloud
     print("接続が閉じられました")
-
+    if cloud:
+        try:
+            cloud.disconnect()
+            print("Scratch接続を切断しました。")
+        except Exception as e:
+            print(f"Scratch切断中にエラーが発生しました: {e}")
+        cloud = None
+    session = None
+    
 def on_open(ws):
-    session = sa.login_by_id(session_id, username=username)
-    cloud = session.connect_cloud(project_id)
-    cloud.disconnect()
-    print("接続が確立されました")
+    print("WebSocket接続が確立されました")
+    init_scratch_connection()
 
 def run_websocket():
     uri = "wss://api.p2pquake.net/v2/ws"
