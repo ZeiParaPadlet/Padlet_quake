@@ -10,6 +10,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from PIL import Image
 import os
+from os import getenv
 import asyncio
 import threading
 from fastapi.responses import JSONResponse
