@@ -81,7 +81,6 @@ def init_scratch_connection():
 def on_message(ws, message):
     global quake_list, quake_image_list, id_list
     init_scratch_connection()
-    print(str(message))
     
     try:
         data = json.loads(message)
@@ -98,6 +97,7 @@ def on_message(ws, message):
         id_list.append(message_id)
 
     if data.get("code") == 551:
+        print(str(message))
         issue = data.get("issue", {})
         earthquake = data.get("earthquake", {})
         hypocenter = earthquake.get("hypocenter", {})
