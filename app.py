@@ -1,5 +1,6 @@
 import websocket
 import psycopg2
+from psycopg2.extensions import connection
 import json
 from fastapi import FastAPI
 from datetime import datetime
