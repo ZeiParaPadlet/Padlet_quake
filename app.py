@@ -90,7 +90,7 @@ def on_message(ws, message):
         return
 
     # IDの重複チェック
-    message_id = data.get("id")
+    message_id = data.get("_id")
     if message_id in id_list:
         print(f"ID {message_id} は既に処理済みです。")
         return
