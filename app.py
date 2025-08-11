@@ -1,4 +1,5 @@
 import websocket
+import psycopg2
 import json
 from fastapi import FastAPI
 from datetime import datetime
@@ -30,7 +31,6 @@ quake_image_list = []
 # 実際のアプリケーションでは、データベースなどを使うべきです
 earthquake_data = {}
 earthquake_image_path = ""
-id_list = []
 
 scale_num = [10, 20, 30, 40, 45, 50, 55, 60, 70]
 scale_name = ["震度1", "震度2", "震度3", "震度4", "震度5弱", "震度5強", "震度6弱", "震度6強", "震度7"]
@@ -38,6 +38,9 @@ scale_name = ["震度1", "震度2", "震度3", "震度4", "震度5弱", "震度5
 # Scratch接続用のグローバル変数を初期化
 session = None
 cloud = None
+
+def get_connection() -> connection:
+    return psycopg2.connect(getenv("DATABASE_URL"))
 
 def scale_num2name(input):
     try:
@@ -90,11 +93,16 @@ def on_message(ws, message):
 
     # IDの重複チェック
     message_id = data.get("_id")
-    if message_id in id_list:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute('SELECT * FROM checked_quake_id WHERE id = %s', (message_id,))
+    if cur.fetchall():
         print(f"ID {message_id} は既に処理済みです。")
         return
     else:
-        id_list.append(message_id)
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute('INSERT INTO checked_quake_id (id) VALUES (%s)', (message_id))
 
     if data.get("code") == 551:
         print(str(message))
