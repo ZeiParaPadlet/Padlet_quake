@@ -1,6 +1,7 @@
 import websocket
 import json
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from datetime import datetime
 import folium
 from folium.features import CustomIcon
@@ -65,7 +66,8 @@ async def get_quake_image():
     global quake_image_list
     if not quake_image_list or not os.path.exists(quake_image_list[-1]):
         return {"error": "画像がまだ生成されていません。"}
-    return {"image_path": earthquake_image_path[-1]}
+    image_path = "quake_image_list[-1]"  # 画像のパスを指定
+    return FileResponse(image_path)
 
 def init_scratch_connection():
     """Scratchクラウド接続を初期化するヘルパー関数"""
