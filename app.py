@@ -59,7 +59,7 @@ async def get_quake_551():
     if not quake_list:
         return JSONResponse(content={"error": "情報がまだ生成されていません。"}, media_type="application/json; charset=utf-8")
     content = quake_list[-1]
-    return return JSONResponse(content=content, media_type="application/json; charset=utf-8")
+    return JSONResponse(content=content, media_type="application/json; charset=utf-8")
 
 @app.get("/get_quake_image")
 async def get_quake_image():
@@ -147,18 +147,18 @@ def on_message(ws, message):
         })
 
         # Scratchクラウド変数への送信処理
-        if cloud:
+        if cloud: # クラウド接続が確立されているかチェック
             try:
                 responce = requests.get(f"https://api.zeipara.f5.si/kanji?context={earthquake_name}")
                 kanji_data = responce.text
-                
+        
                 # スケールが不明の場合は0に設定
                 max_scale_value = maxScale_num if maxScale_num else 0
-                
+        
                 cloud.set_var("1", f"{kanji_data}00000{depth}00000{magnitude * 10}00000{max_scale_value * 10}")
+                print("Scratchクラウド変数を更新しました。")
             except Exception as e:
                 print(f"Scratchクラウド変数更新中にエラーが発生しました: {e}")
-                cloud = None
         else:
             print("Scratchクラウドに接続されていません。変数を送信できません。")
             
