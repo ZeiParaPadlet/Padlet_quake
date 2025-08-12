@@ -66,7 +66,8 @@ async def get_quake_image():
     global quake_image_list
     if not quake_image_list or not os.path.exists(quake_image_list[-1]):
         return {"error": "画像がまだ生成されていません。"}
-    image_path = "quake_image_list[-1]"  # 画像のパスを指定
+    
+    image_path = quake_image_list[-1] # 正しいパスを取得
     return FileResponse(image_path)
 
 def init_scratch_connection():
