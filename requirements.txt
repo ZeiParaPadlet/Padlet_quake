@@ -5,4 +5,3 @@ folium
 selenium
 Pillow
 scratchattach
-psycopg2
