@@ -167,7 +167,7 @@ def on_message(ws, message):
         if latitude and longitude:
             try:
                 icon_image_path = 'icon.png'
-                m = folium.Map(location=[latitude, longitude], zoom_start=100)
+                m = folium.Map(location=[latitude, longitude], zoom_start=5)
                 icon = CustomIcon(icon_image=icon_image_path, icon_size=(50, 50))
                 folium.Marker(location=[latitude, longitude], tooltip="震源", icon=icon).add_to(m)
                 
