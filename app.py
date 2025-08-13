@@ -226,7 +226,7 @@ def run_websocket():
                                 on_message=on_message,
                                 on_error=on_error,
                                 on_close=on_close)
-    ws.run_forever()
+    ws.run_forever(reconnect=5)
 
 # FastAPIの起動前にWebSocketクライアントを別スレッドで実行
 websocket_thread = threading.Thread(target=run_websocket)
