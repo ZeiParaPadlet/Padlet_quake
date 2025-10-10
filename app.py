@@ -108,7 +108,7 @@ def init_scratch_connection():
 
 @events.event
 def on_set(activity):
-    if activity.username != "kurosio2-2-2" and activity.var = "申請" and num2name(activity.value) not in sukutomo:
+    if activity.username != "zei_san" and activity.var = "申請" and num2name(activity.value) not in sukutomo:
         sukutomo.append(num2name(activity.value))
     cloud.set_var("申請", "")
     print("申請届いたZOY")
