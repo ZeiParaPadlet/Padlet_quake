@@ -35,7 +35,7 @@ id_list = []
 earthquake_data = {}
 earthquake_image_path = ""
 
-session_2 = sa.login(username, password)
+session_2 = sa.login_by_id(session_id, username=username)
 profile = session_2.connect_cloud("1221982467")
 events = cloud.events()
 
