@@ -37,7 +37,7 @@ earthquake_image_path = ""
 
 session_2 = sa.login_by_id(session_id, username=username)
 profile = session_2.connect_cloud("1221982467")
-events = cloud.events()
+events = profile.events()
 
 sukutomo = []
 
@@ -106,7 +106,7 @@ def init_scratch_connection():
         session = None
         cloud = None
 
-@events.event
+@profile.event
 def on_set(activity):
     if activity.username != "zei_san" and activity.var == "申請" and num2name(activity.value) not in sukutomo:
         sukutomo.append(num2name(activity.value))
