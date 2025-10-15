@@ -18,13 +18,12 @@ import requests
 
 username = os.getenv("USERNAME")
 session_id = os.getenv("SESSION_ID")
-
-app = FastAPI()
-
 project_id = os.getenv("PROJECT_ID")
 print(username)
 print(session_id)
 print(project_id)
+
+app = FastAPI()
 
 images_id = 0
 quake_list = []
@@ -35,13 +34,6 @@ id_list = []
 earthquake_data = {}
 earthquake_image_path = ""
 
-session_2 = sa.login_by_id(session_id, username=username)
-profile = session_2.connect_cloud("1221982467")
-events = profile.events()
-
-sukutomo = []
-
-text_list = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "W", "X", "Y", "Z", "_", "-"]
 
 scale_num = [10, 20, 30, 40, 45, 50, 55, 60, 70]
 scale_name = ["震度1", "震度2", "震度3", "震度4", "震度5弱", "震度5強", "震度6弱", "震度6強", "震度7"]
@@ -49,12 +41,6 @@ scale_name = ["震度1", "震度2", "震度3", "震度4", "震度5弱", "震度5
 # Scratch接続用のグローバル変数を初期化
 session = None
 cloud = None
-
-def num2name(input):
-    result = ""
-    for i in range(len(input) / 2):
-       result = result + text_list[int(input[i*2:i*2+1])] 
-    return result
 
 def scale_num2name(input):
     try:
@@ -84,14 +70,6 @@ async def get_quake_image():
     image_path = quake_image_list[-1] # 正しいパスを取得
     return FileResponse(image_path)
 
-@app.get("/sukutomo")
-def sukutomo():
-    return sukutomo
-
-@app.get("/sukutomo/clear")
-def clears():
-    sukutomo = []
-
 def init_scratch_connection():
     """Scratchクラウド接続を初期化するヘルパー関数"""
     global session, cloud
@@ -105,13 +83,6 @@ def init_scratch_connection():
         print(f"Scratchへの接続中にエラーが発生しました: {e}")
         session = None
         cloud = None
-
-@profile.event
-def on_set(activity):
-    if activity.username != "zei_san" and activity.var == "申請" and num2name(activity.value) not in sukutomo:
-        sukutomo.append(num2name(activity.value))
-    cloud.set_var("申請", "")
-    print("申請届いたZOY")
 
 def on_message(ws, message):
     global quake_list, quake_image_list, id_list
